@@ -41,6 +41,8 @@ struct event {
         void *data;
 };
 
+typedef struct event ev_t;
+
 int evinit(void);
 int evread(int ev, int fd, void *data);
 int evwrite(int ev, int fd, void *data);
@@ -234,6 +236,20 @@ int evwait(int ev, struct event *changes, int nchanges) {
         }
         return n;
 }
+
+#define evloop(EV, BODY)                                                        \
+        do {                                                                    \
+                ev_t __ev_events[EVWAIT_KQUEUE_SIZE];                           \
+                for (;;) {                                                      \
+                        int ev_n = evwait(EV, __ev_events, EVWAIT_KQUEUE_SIZE); \
+                        for (int ev_i = 0; ev_i < ev_n; ev_i++) {               \
+                                int   ev_fd     = __ev_events[ev_i].fd;         \
+                                int   ev_events = __ev_events[ev_i].events;     \
+                                void *ev_data   = __ev_events[ev_i].data;       \
+                                BODY;                                           \
+                        }                                                       \
+                }                                                               \
+        } while (0)
 
 #endif /* NET_IMPLEMENTATION */
 #endif /* NET_H */
